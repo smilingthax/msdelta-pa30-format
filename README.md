@@ -15,25 +15,26 @@ DELTA_HEADER_INFO:
   FileType: 0x0000000000000001
   Flags: 0x0000000000020000
   TargetSize: 12345
-  TargetFileTime: 0x01cd456789abcdef (unix: 13391539251)
+  TargetFileTime: 0x01cd456789abcdef (unix: 1339153925)
   TargetHashAlgId: 0x00008003  (i.e. CALG_MD5)
   TargetHash:
-    Size: 16
+    HashSize: 16
     HashValue: 00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
 ```
 Files with Signature "PA19"  are handled by falling back to mspatcha.dll.
 
 | Pos | Content
 |-|-|
-| 0 – 4  | "PA30" |
-| 5 – 12 | `TargetFileTime` (64bit LE int) <br> (100ns-Units since 1601-01-01) |
-| 13 – ... | Bitstream w/ initial pad `0b000` (??), `FileTypeSet` (aka. `version`), `FileType` (aka. `code`), `Flags`, `TargetSize`, `TargetHashAlgId`, `TargetHash` ("Buffer", w/ int size + byte-aligned(??) content)
+| 0 – 3  | "PA30" |
+| 4 – 11 | `TargetFileTime` (64bit LE int) <br> (100ns-Units since 1601-01-01) |
+| 12 – ... | Bitstream w/ initial pad `0b000` (??), `FileTypeSet` (aka. `version`), `FileType` (aka. `code`), `Flags`, `TargetSize`, `TargetHashAlgId`, `TargetHash` ("Buffer", w/ int size + byte-aligned(??) content)
 
- ## BitStream
+## BitStream
  * Bits are read/written LSB-first (!).
  * The stream seems to start with three 0-bits (?).
- * (unsigned) integers (up to 64 bit) are coded as follows:
-    1. The number of nibbles (4-bit) required to represent the value (i.e. `nibbles = floor(BitScanForward(value) / 4)`,  with special `value == 0` treated like `1`) is written as `nibble + 1` bits with value `(1 << nibbles)`.
+ * integral Numbers (up to 64 bit; 32bit: unsigned / 64bit: signed) are coded as follows:
+    1. The number of nibbles (4-bit) required to represent the value (i.e. `nibbles = floor(log_2(value) / 4)`,
+       with special `value == 0` treated like `1`) is written as `nibble + 1` bits with value `(1 << nibbles)`.
     2. The following `(nibbles + 1) * 4` bits are copied from  the value.
  * Buffers are written as integer size + padding to byte boundary (?) + content bytes.
 
@@ -94,7 +95,7 @@ blockname5( BitReaderOpen ): signature[ 1 ];
 * Blocks can have multiple inputs (after `:`, separated by `,`) and outputs (accessed later via `blockname[ ? ]`)
 * An opened `BitReader` (or is it a Buffer?) is "chained" through multiple `BitReadInt` via `[ 0 ]`, with the obtained int value in `[ 1 ]`...
 * `TToAscii` seems to be implemented as "subgraph" `wrap( CopyBuffer ):;`
-* Graphs seem to come only from hardcoded strings, thus the whole processing graph w/ dynamic setup stuff is probably not needed in a compatible implementation (?).
+* Graphs seem to come only from hardcoded strings, thus the whole processing graph w/ dynamic setup stuff is probably not needed in a compatible implementation (?; multi-threading?).
 Still, the string representations helps to get an understanding of the format.
 * Some interesting Blocks:  `PassIniReader`, `DebugWriteFile`
 * The third argument to `CheckBuffersIdentity` is probably an internal error code thrown when the buffers don't match...
