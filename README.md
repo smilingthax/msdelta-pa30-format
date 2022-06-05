@@ -21,22 +21,22 @@ DELTA_HEADER_INFO:
     HashSize: 16
     HashValue: 00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
 ```
-Files with Signature "PA19"  are handled by falling back to mspatcha.dll.
+Files with Signature "PA19" are handled by falling back to mspatcha.dll (when DELTA_APPLY_FLAG_ALLOW_PA19 is given).
 
 | Pos | Content
 |-|-|
 | 0 – 3  | "PA30" |
-| 4 – 11 | `TargetFileTime` (64bit LE int) <br> (100ns-Units since 1601-01-01) |
-| 12 – ... | Bitstream w/ initial pad `0b000` (??), `FileTypeSet` (aka. `version`), `FileType` (aka. `code`), `Flags`, `TargetSize`, `TargetHashAlgId`, `TargetHash` ("Buffer", w/ int size + byte-aligned(??) content)
+| 4 – 11 | `TargetFileTime` (64bit LE int: 100ns-Units since 1601-01-01) |
+| 12 – ... | Bitstream w/ initial pad `0b000` (??), `FileTypeSet` (aka. `version`), `FileType` (aka. `code`), `Flags`, `TargetSize`, `TargetHashAlgId`, `TargetHash` ("Buffer", w/ int size + byte-aligned content)
 
 ## BitStream
  * Bits are read/written LSB-first (!).
- * The stream seems to start with three 0-bits (?).
+ * The stream seems to start with three 0-bits (? - actual value seems to be ignored...).
  * integral Numbers (up to 64 bit; 32bit: unsigned / 64bit: signed) are coded as follows:
     1. The number of nibbles (4-bit) required to represent the value (i.e. `nibbles = floor(log_2(value) / 4)`,
        with special `value == 0` treated like `1`) is written as `nibble + 1` bits with value `(1 << nibbles)`.
     2. The following `(nibbles + 1) * 4` bits are copied from  the value.
- * Buffers are written as integer size + padding to byte boundary (?) + content bytes.
+ * Buffers are written as integer size + padding to byte boundary + content bytes.
 
 Example:
 Bit number |0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|...
@@ -57,8 +57,11 @@ After the Header, the bitstream encodes two Buffers:
 1. `preProcessBuffer`, containing information required for preprocessing depending of file type. The preprocessing also outputs a "rift table", which is corrected(?) for the size of the (to be prepended) source buffer.
 2. `patchBuffer`, which consists of an (independent) Bitstream containing:
    1. a "base" rift table, which, merged with the preprocessing rift table, is obtained from / passed to the compressor, and
-   2. compression parameters/statistics/tables(?) (in "composite format")
+   2. compression parameters/statistics/tables(?, e.g. canonical huffman lengths) (in "composite format")
    3. the compressor bitstream
+
+### Rift table
+List of intervals `[left, right)`, stored as pairs of integers... (TODO...)
 
 ## Related Patents (expired)
 * "Method and system for updating software with smaller patch files" https://patents.google.com/patent/US6938109B1/en  
@@ -73,7 +76,6 @@ After the Header, the bitstream encodes two Buffers:
    -> Intra Package Delta format in CAB archives,    `_manifest_.cix.xml` ...
 
 ## TODO
-* After the Header the active bitstream coding is continued.
 * "Normalization" / "Transform" of certain file types (esp. executables, processor architecture specific!), Rift Tables...
 * But many PA30-files don't use/set those transforms/flags and are not "delta-a-previous-file" (source is empty buffer)!
 * Compression? (`PseudoLzxCompress`, ... ?)
