@@ -86,6 +86,8 @@ Given a desired number of symbols, `size`, "default lengths" for a complete huff
 
 LZX Delta (https://interoperability.blob.core.windows.net/files/MS-PATCH/%5bMS-PATCH%5d.pdf) describes the specifics (enumeration order, ...) of the canonical huffmann code (Note: DEFLATE uses right-leaning tree, but here a left-leaning tree is used!).
 
+TODO: output_position starts with length of "prepended" source buffer (possibly modified by preprocessing)... !
+
 ## Patch buffer
 
 | Type | Content |
@@ -100,8 +102,8 @@ LZX Delta (https://interoperability.blob.core.windows.net/files/MS-PATCH/%5bMS-P
 | **-- Content --** | |
 | ... | Huffman coded matches, using parameters for the block corresponding to the current output position. |
 
-The 872 lengths  (= 0x368)  parameters of each block are actually the lengths of three separate huffman trees, `main tree` (0x258 symbols), `lengths tree` (0x100 symbols), `aligned offset tree` (0x10 symbols) concatenated in that order; all three trees use max. 16 bit long codes.  
-For `isDefault` each of the three trees uses the "default lengths" (see above) for their respective size.
+The 872 lengths (= 0x368) parameters of each block are actually the lengths of three separate huffman trees, `main tree` (0x258 symbols), `lengths tree` (0x100 symbols), and `aligned offset tree` (0x10 symbols), concatenated in that order; all three trees use max. 16 bit long codes.  
+For `isDefault`, each of the three trees uses the respective "default lengths" (see above) according to its size.
 
 ### RLE delta coding of lengths
 | Symbol number | Meaning |
@@ -129,9 +131,9 @@ Pseudo-code:
 There are different types of matches, coded with the `main tree`:
 1. A literal byte (symbol = 0 ... 255, implicit `length = 1`),
 2. copy `(offset, length)` from `output_position - offset`,
-3. copy `(delta, length)` from `output_position + rift_offset(output_position) + delta` (TODO: signs?), must not cross a rift-boundary,
+3. copy `(delta, length)` from `output_position + rift_offset(output_position) - delta`, must not cross a rift-boundary,
 4. copy `(length)` from `output_position + rift_offset(output_position)` (TODO??) across multiple rift segments, or
-5. copy `(lru_index, length)` from `output_position + lru[lru_index]` with a three-element least-recently-used queue ("repeat match"), updated after every non-literal match (NOTE: unlike LZX Delta, a full implementation is used here).
+5. copy `(lru_index, length)` from `output_position - lru[lru_index]` with a three-element least-recently-used queue ("repeat match"), updated after every non-literal match (NOTE: unlike LZX Delta, a full implementation is used here).
 
 For non-literal matches, the symbol number encodes a pair `(slot, length) = ((sym - 256) >> 3, (sym - 256) & 7)`.  Depending on the slot number, additional bits of the offset then follow.
 

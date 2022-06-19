@@ -63,6 +63,7 @@ int main(int argc, char **argv)
 //  if (!dpa_GetDeltaInfo(&input, &dhi, NULL)) {
   if (!dpa_GetDeltaInfo(&input, &dhi, &extra)) {
     fprintf(stderr, "Error: GetDeltaInfo failed\n");
+    free(inbuf);
     return 1;
   }
 
