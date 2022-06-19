@@ -6,11 +6,12 @@
 extern "C" {
 #endif
 
-typedef struct {
+typedef struct _dpa_bitreader_t {
   dpa_span_t in;
   size_t pos;
   uint64_t value;
   size_t fill;
+  unsigned char pad;
 } dpa_bitreader_t;
 
 // returns 0 on error
@@ -26,13 +27,16 @@ int dpa_bitreader_read_number64(dpa_bitreader_t *br, int64_t *ret);
 int dpa_bitreader_read_buffer(dpa_bitreader_t *br, dpa_span_t *ret);
 
 
-// ensures at least 40 bit in br->value (if available)
+// ensures at least 57 bit in br->value (if available)
 static inline void _dpa_bitreader_fill(dpa_bitreader_t *br)
 {
   while (br->fill <= 56 && br->pos < br->in.len) {
     br->value |= (uint64_t)br->in.buf[br->pos] << br->fill;
     br->fill += 8;
     br->pos++;
+    if (br->pos == br->in.len) { // special case for very last byte
+      br->fill -= br->pad;
+    }
   }
 }
 
@@ -62,4 +66,3 @@ static inline int dpa_bitreader_read_fast(dpa_bitreader_t *br, size_t len, uint3
 #ifdef __cplusplus
 }
 #endif
-

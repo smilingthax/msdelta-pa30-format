@@ -1,4 +1,4 @@
-OBJS=bitreader/bitreader.o getdeltainfo.o
+OBJS=bitreader/bitreader.o bitreader/huffman.o getdeltainfo.o
 
 CPPFLAGS=-Wall -Wextra -Ibitreader
 

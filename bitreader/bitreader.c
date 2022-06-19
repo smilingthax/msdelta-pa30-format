@@ -16,7 +16,7 @@ static inline unsigned int ctz32(const uint32_t val)
 
 int dpa_bitreader_init(dpa_bitreader_t *br, const unsigned char *buf, size_t len)
 {
-  if (!br) {
+  if (!br || len <= 0) {
     return 0;
   }
 
@@ -24,8 +24,19 @@ int dpa_bitreader_init(dpa_bitreader_t *br, const unsigned char *buf, size_t len
   br->in.buf = buf;
   br->in.len = len;
 
-  uint32_t dummy;
-  return dpa_bitreader_read_fast(br, 3, &dummy);
+  uint32_t pad;
+  dpa_bitreader_read_fast(br, 3, &pad); // (NOTE: initial br->pad == 0)
+  // assert(...did not fail...); // because in.len > 0
+
+  br->pad = pad;
+  if (br->pos == br->in.len) { // last byte already in value!
+    if (br->fill < pad) {
+      return 0;
+    }
+    br->fill -= pad;
+  }
+
+  return 1;
 }
 
 int dpa_bitreader_read64(dpa_bitreader_t *br, size_t len, uint64_t *ret)
