@@ -1,6 +1,6 @@
-OBJS=bitreader/bitreader.o bitreader/huffman.o getdeltainfo.o
+OBJS=bitreader/bitreader.o bitreader/huffman.o getdeltainfo.o plzx/huffdec.o plzx/composite.o
 
-CPPFLAGS=-Wall -Wextra -Ibitreader
+CPPFLAGS=-Wall -Wextra
 
 DEPS=$(patsubst %.o,%.d,$(OBJS))
 

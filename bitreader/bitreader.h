@@ -23,6 +23,9 @@ int dpa_bitreader_read64(dpa_bitreader_t *br, size_t len, uint64_t *ret);
 int dpa_bitreader_read_number(dpa_bitreader_t *br, uint32_t *ret);
 int dpa_bitreader_read_number64(dpa_bitreader_t *br, int64_t *ret);
 
+// special coding for plzx match lengths > 255
+int dpa_bitreader_read_number_8(dpa_bitreader_t *br, uint32_t *ret);
+
 // the span points inside br->in.buf!
 int dpa_bitreader_read_buffer(dpa_bitreader_t *br, dpa_span_t *ret);
 

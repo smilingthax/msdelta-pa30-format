@@ -26,9 +26,9 @@ Files with Signature "PA19" are handled by falling back to mspatcha.dll (when DE
 
 | Pos | Content
 |-|-|
-| 0 – 3  | "PA30" |
-| 4 – 11 | `TargetFileTime` (64bit LE int: 100ns-Units since 1601-01-01) |
-| 12 – ... | Outer bitstream
+| 0 – 3  | "PA30" |
+| 4 – 11 | `TargetFileTime` (64bit LE int: 100ns-Units since 1601-01-01) |
+| 12 – ... | Outer bitstream
 
 ## BitStreams
 
@@ -97,7 +97,7 @@ TODO: output_position starts with length of "prepended" source buffer (possibly 
 | 1 bit | `isDefault`: A single block with "default" huffman lengths. The bitstream directly continues with the actual Content in this case. |
 | number | `num_blocks`: Number of parameter blocks used. |
 | number[num_blocks] | Delta-encoded (init = 0) start offsets, i.e. where the corresponding block parameters take effect.
-| (4 bits)[39] | Huffman pre-table used to encode the lenghts of the actual huffman tables.
+| (4 bits)[39] | Huffman pre-tree used to encode the lenghts of the actual huffman tree.
 | (872 lengths)[num_blocks] | RLE delta + Huffman coded (see below) lengths (wrt. previous block, init = all-0)
 | **-- Content --** | |
 | ... | Huffman coded matches, using parameters for the block corresponding to the current output position. |
@@ -108,11 +108,11 @@ For `isDefault`, each of the three trees uses the respective "default lengths" (
 ### RLE delta coding of lengths
 | Symbol number | Meaning |
 |-|-|
-| 0 – 16 | Verbatim, copy number to output |
-| 17 / 18 / 19 | Length from previous block +1 / +2 / +3 |
-| 20 / 21 / 22 | Length from previous block -1 / -2 / -3 |
-| 23 – 30 | RLE fill with last written length (not possibly for very first length of each block) |
-| 31 – 38 | RLE copy lengths from previous block |
+| 0 – 16 | Verbatim, copy number to output |
+| 17 / 18 / 19 | Length from previous block +1 / +2 / +3 |
+| 20 / 21 / 22 | Length from previous block -1 / -2 / -3 |
+| 23 – 30 | RLE fill with last written length (not possibly for very first length of each block) |
+| 31 – 38 | RLE copy lengths from previous block |
 
 The length for the RLE operation is:
 1. For the first 3 symbol numbers (23/24/25 resp. 31/32/33) the length is 1/2/3,
@@ -129,7 +129,7 @@ Pseudo-code:
 
 ### Matches
 There are different types of matches, coded with the `main tree`:
-1. A literal byte (symbol = 0 ... 255, implicit `length = 1`),
+1. A literal byte (`sym = 0 .. 255`, implicit `length = 1`),
 2. copy `(offset, length)` from `output_position - offset`,
 3. copy `(delta, length)` from `output_position + rift_offset(output_position) - delta`, must not cross a rift-boundary,
 4. copy `(length)` from `output_position + rift_offset(output_position)` (TODO??) across multiple rift segments, or
@@ -139,8 +139,27 @@ For non-literal matches, the symbol number encodes a pair `(slot, length) = ((sy
 
 For `length == 0` the final match length is then coded with the `length tree`, with possibly additional bits coded in a var-length format.
 
-TODO: describe slot codings  
-TODO: describe length var-length-format
+#### Slot codings
+| Slot nr. | Parameter | Encoding |
+|-|-|-|
+| 0 | delta | `delta = READ_BITS(14) - 0x2000` <br> (i.e. `-0x2000 <= delta < 0x1fff`) |
+| 1 | delta | `raw = READ_BITS(16) - 0x8000` <br> `delta = (raw < 0) ? raw - 0x2000 : raw + 0x2000` <br> (i.e. `-0xa000 <= raw < -0x2000 ` or `0x2000 <= delta < 0x9fff`) |
+| 2 | delta | `raw = READ_BITS(18) - 0x20000` <br> `delta = (raw < 0) ? raw - 0xa000 : raw + 0xa000` <br> (i.e. `-0x2a000 <= raw < -0xa000 ` or `0xa000 <= delta < 0x29fff`) |
+| 3 | *none* | (case 4.) |
+| 4 – 6 | lru_index | `lru_index = slot - 4` <br> (i.e. `0 <= lru_index < 3`) |
+| 7 | slot | Special case for large slot numbers (>= 43), read up to 6 more bits (w/ LSB first):<br> `0xx  -> slot = 43 + xx` (i.e. `43 <= slot < 47`) <br> `10xxx  -> slot = 47 + xx` (i.e. `47 <= slot < 55`) <br> `11xxxx  -> slot = 55 + xx` (i.e. `55 <= slot < 71`) |
+| 8 – 10 | offset | `offset = slot - 7` <br> (i.e. `1 <= offset < 4`) |
+| | **when slot >= 11:** | `top_bits = 2 | ((slot - 11) & 1)` <br> `verbatim_len = ((slot - 11) >> 1) + 1` |
+| 11 – 16 | offset | `offset = (top_bits << verbatim_len) \| READ_BITS(verbatim_len)` <br> (i.e. `1 <= verbatim_len < 4`, `4 <= offset < 32`) |
+| 17 – 42, <br> 43 – 70 (via 7) | offset | `offset = (top_bits << verbatim_len) \| (READ_BITS(verbatim_len - 4) << 4) \| aligned_bits` <br> with `aligned_bits` huffman coded using the `aligned offset tree` <br> (i.e. `0 <= aligned_offset < 16`, `32 <= offset <= 0xffffffff`) |
+
+#### Length coding
+* When `length > 0`, it is taken as-is.
+* Otherwise `length_bits` is coded using the `length tree` (`0 <= length_bits < 256`).
+  - When `length_bits > 0`, `length = length_bits + 8` (i.e. ` length < 264`).
+  - Otherwise,  `length = long_length + 8`, where `long_length` is a variable-length coding for 8 to 32 bit numbers:
+    1. First `floor(log_2(long_length)) - 8` zero bits are written, followed by a `1` bit,
+    2. then the bits of `long_length` are written from the LSB up to, but not including(!), the top-most bit.
 
 ## Rift table
 

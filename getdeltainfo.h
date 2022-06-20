@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dpatypes.h"
+#include "bitreader/dpatypes.h"
 
 #define DPA_MAX_HASH_SIZE  32
 

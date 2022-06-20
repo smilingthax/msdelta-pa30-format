@@ -1,7 +1,7 @@
 #include "getdeltainfo.h"
 #include <stdio.h>  // TODO? fprintf
 #include <string.h>   // memcmp, memcpy
-#include "bitreader.h"
+#include "bitreader/bitreader.h"
 
 static uint64_t read_uint64_LE(const unsigned char *buf)
 {

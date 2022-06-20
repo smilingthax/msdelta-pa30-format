@@ -117,6 +117,30 @@ int dpa_bitreader_read_number64(dpa_bitreader_t *br, int64_t *ret)
   return 1;
 }
 
+int dpa_bitreader_read_number_8(dpa_bitreader_t *br, uint32_t *ret)
+{
+  if (!br || !ret) {
+    return 0;
+  }
+
+  _dpa_bitreader_fill(br);
+  const unsigned int bits = ctz32(0x01000000 | br->value); // (1 << (32 - 8))
+  if (bits >= 24) { // (32 - 8)
+    return 0;
+  }
+
+  const unsigned int len = bits + 8; // 8..31
+  if (br->fill < 1 + bits + len) { // up to 55 bits!
+    return 0;
+  }
+
+  *ret = (1 << len) | ((uint32_t)(br->value >> (1 + bits)) & (~0u >> (32 - len)));
+  br->value >>= 1 + bits + len;
+  br->fill -= 1 + bits + len;
+
+  return 1;
+}
+
 // (may leave ret->len dirty on failure)
 int dpa_bitreader_read_buffer(dpa_bitreader_t *br, dpa_span_t *ret)
 {
