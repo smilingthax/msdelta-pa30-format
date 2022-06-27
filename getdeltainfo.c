@@ -19,8 +19,8 @@ int dpa_GetDeltaInfo(const dpa_span_t *input, dpa_header_info_t *ret, dpa_extra_
     return 0;
   }
 
-  if (memcmp(input->buf, "PA30", 0) != 0) {
-    if (memcmp(input->buf, "PA19", 0) == 0) {
+  if (memcmp(input->buf, "PA30", 4) != 0) {
+    if (memcmp(input->buf, "PA19", 4) == 0) {
       fprintf(stderr, "Not Implemented: fallback of PA19 files to legacy format\n");
     }
     fprintf(stderr, "Error: Expected PA30 signature\n"); // TODO? elsewhere / error code?
