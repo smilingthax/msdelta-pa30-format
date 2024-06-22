@@ -37,7 +37,7 @@ int dpa_GetDeltaInfo(const dpa_span_t *input, dpa_header_info_t *ret, dpa_extra_
   if (!dpa_bitreader_read_number64(&br, &ret->FileTypeSet) ||
       !dpa_bitreader_read_number64(&br, &ret->FileType) ||
       !dpa_bitreader_read_number64(&br, &ret->Flags) ||
-      !dpa_bitreader_read_number(&br, &ret->TargetSize) ||
+      !dpa_bitreader_read_number_z(&br, &ret->TargetSize) ||
       !dpa_bitreader_read_number(&br, &ret->TargetHashAlgId)) {
     return 0;
   }

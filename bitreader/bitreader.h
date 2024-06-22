@@ -22,6 +22,8 @@ int dpa_bitreader_read64(dpa_bitreader_t *br, size_t len, uint64_t *ret);
 
 int dpa_bitreader_read_number(dpa_bitreader_t *br, uint32_t *ret);
 int dpa_bitreader_read_number64(dpa_bitreader_t *br, int64_t *ret);
+// size_t can be 32bit or 64bit...
+int dpa_bitreader_read_number_z(dpa_bitreader_t *br, size_t *ret);
 
 // special coding for plzx match lengths > 255
 int dpa_bitreader_read_number_8(dpa_bitreader_t *br, uint32_t *ret);

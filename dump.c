@@ -51,7 +51,7 @@ static unsigned char *load_file(const char *name, size_t *ret_len) // {{{
 #include <ctype.h>
 
 // NOTE: this is a full implementation, unlike lzx delta!
-static void _update_lru(size_t lru[3], size_t val)
+static void _update_lru(uint32_t lru[3], uint32_t val)
 {
   if (lru[0] == val) {
     return;
@@ -145,7 +145,7 @@ static int dump_patch(const unsigned char *buf, size_t len, size_t dst_size)
     // CAVE: this check must catch opos >= dst_size w/o overflow!
     if (opos + match.length < opos ||    // or: __builtin_add_overflow ?
         opos + match.length > dst_size) {
-      fprintf(stderr, "Error: match length %d too big at %d\n", match.length, opos);
+      fprintf(stderr, "Error: match length %d too big at %zu\n", match.length, opos);
       goto err;
     }
 
@@ -172,7 +172,7 @@ printf("  LRU %d (-> %d), length: %d\n", match.lru, lru[match.lru], match.length
 printf("  DST offset: %d, length: %d\n", match.offset, match.length);
       // assert(match.offset > 0);
       if (match.offset > opos) {
-        fprintf(stderr, "Error: bad dst match offset: %d at %d\n", match.offset, opos);
+        fprintf(stderr, "Error: bad dst match offset: %d at %zu\n", match.offset, opos);
         goto err;
       }
       _update_lru(lru, match.offset);  // NOTE: we can't be 100% sure that compressor has used LRU symbol to encode offset in current LRU list...
@@ -224,11 +224,11 @@ int main(int argc, char **argv)
          "  FileTypeSet: 0x%016llx\n"
          "  FileType: 0x%016llx\n"
          "  Flags: 0x%016llx\n"
-         "  TargetSize: %zd\n"
+         "  TargetSize: %zu\n"
          "  TargetFileTime: 0x%016llx (unix: %d)\n"
          "  TargetHashAlgId: 0x%08x\n"
          "  TargetHash:\n"
-         "    HashSize: %zd\n"
+         "    HashSize: %zu\n"
          "    HashValue:",
          filename,
          dhi.FileTypeSet, dhi.FileType, dhi.Flags,
@@ -240,9 +240,9 @@ int main(int argc, char **argv)
   printf("\n");
 
   printf("\nextra:\n"
-         "  preproc start: %zd, len: %zd\n"
-         "  patch start: %zd, len: %zd\n"
-         "  end: %zd  (file size: %zd)\n",
+         "  preproc start: %zd, len: %zu\n"
+         "  patch start: %zd, len: %zu\n"
+         "  end: %zd  (file size: %zu)\n",
          extra.preproc.buf - inbuf, extra.preproc.len,
          extra.patch.buf - inbuf, extra.patch.len,
          extra.end - inbuf, inlen);

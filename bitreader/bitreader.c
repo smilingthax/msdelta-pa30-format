@@ -117,6 +117,25 @@ int dpa_bitreader_read_number64(dpa_bitreader_t *br, int64_t *ret)
   return 1;
 }
 
+int dpa_bitreader_read_number_z(dpa_bitreader_t *br, size_t *ret)
+{
+#if SIZE_MAX == UINT32_MAX
+  return dpa_bitreader_read_number(br, ret);
+#else
+  if (!br || !ret) {
+    return 0;
+  }
+
+  int64_t tmp;
+  if (!dpa_bitreader_read_number64(br, &tmp)) {
+    return 0;
+  }
+  *ret = tmp;
+
+  return 1;
+#endif
+}
+
 int dpa_bitreader_read_number_8(dpa_bitreader_t *br, uint32_t *ret)
 {
   if (!br || !ret) {
@@ -148,7 +167,7 @@ int dpa_bitreader_read_buffer(dpa_bitreader_t *br, dpa_span_t *ret)
     return 0;
   }
 
-  if (!dpa_bitreader_read_number(br, &ret->len)) {
+  if (!dpa_bitreader_read_number_z(br, &ret->len)) {
     return 0;
   }
 

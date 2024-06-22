@@ -56,7 +56,7 @@ dpa_plzxdec_t *dpa_plzx_read_composite(dpa_bitreader_t *br)
       goto err;
     }
     start += delta;
-    if (start > SIZE_MAX) { // TODO?
+    if ((uint64_t)start > SIZE_MAX) { // TODO?
       fprintf(stderr, "Error: too large\n");
       goto err;
     }
