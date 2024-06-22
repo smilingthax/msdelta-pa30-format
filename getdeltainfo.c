@@ -5,7 +5,7 @@
 
 static uint64_t read_uint64_LE(const unsigned char *buf)
 {
-  return (buf[0]) | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24) |
+  return (buf[0]) | (buf[1] << 8) | (buf[2] << 16) | ((unsigned)buf[3] << 24) |
          ((uint64_t)((buf[4]) | (buf[5] << 8) | (buf[6] << 16) | (buf[7] << 24)) << 32);
 }
 
