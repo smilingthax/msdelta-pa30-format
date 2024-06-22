@@ -149,7 +149,7 @@ For `length == 0` the final match length is then coded with the `length tree`, w
 | 4 – 6 | lru_index | `lru_index = slot - 4` <br> (i.e. `0 <= lru_index < 3`) |
 | 7 | slot | Special case for large slot numbers (>= 43), read up to 6 more bits (w/ LSB first):<br> `0xx  -> slot = 43 + xx` (i.e. `43 <= slot < 47`) <br> `10xxx  -> slot = 47 + xx` (i.e. `47 <= slot < 55`) <br> `11xxxx  -> slot = 55 + xx` (i.e. `55 <= slot < 71`) |
 | 8 – 10 | offset | `offset = slot - 7` <br> (i.e. `1 <= offset < 4`) |
-| | **when slot >= 11:** | `top_bits = 2 | ((slot - 11) & 1)` <br> `verbatim_len = ((slot - 11) >> 1) + 1` |
+| | **when slot >= 11:** | `top_bits = 2 \| ((slot - 11) & 1)` <br> `verbatim_len = ((slot - 11) >> 1) + 1` |
 | 11 – 16 | offset | `offset = (top_bits << verbatim_len) \| READ_BITS(verbatim_len)` <br> (i.e. `1 <= verbatim_len < 4`, `4 <= offset < 32`) |
 | 17 – 42, <br> 43 – 70 (via 7) | offset | `offset = (top_bits << verbatim_len) \| (READ_BITS(verbatim_len - 4) << 4) \| aligned_bits` <br> with `aligned_bits` huffman coded using the `aligned offset tree` <br> (i.e. `0 <= aligned_offset < 16`, `32 <= offset <= 0xffffffff`) |
 
